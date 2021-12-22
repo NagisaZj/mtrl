@@ -149,13 +149,28 @@ class Experiment(experiment.Experiment):
         env_indices = multitask_obs["task_obs"]
 
         train_mode = ["train" for _ in range(vec_env.num_envs)]
-
+        success_cnt = np.zeros((len(env_indices),5))
+        pointer = 0
+        success_set = []
+        use_pseudo_idx = False
+        pseudo_idx = 0
         for step in range(self.start_step, exp_config.num_train_steps):
-
             if step % self.max_episode_steps == 0:  # todo
                 if step > 0:
                     if "success" in self.metrics_to_track:
                         success = (success > 0).astype("float")
+                        success_cnt[:,pointer] = success
+                        pointer = (pointer+1)%5
+                        for i in range(success_cnt.shape[0]):
+                            if i not in success_set:
+                                if np.mean(success_cnt[i])==1:
+                                    success_set.append(i)
+                        print('success set: ', success_set)
+                        if len(success_set) > 0:
+                            idx = np.random.randint(0, len(success_set))
+                            pseudo_idx = success_set[idx]
+                            use_pseudo_idx = (np.random.rand() > 2.5)
+                            print(pseudo_idx,use_pseudo_idx)
                         for index, _ in enumerate(env_indices):
                             self.logger.log(
                                 f"train/success_env_index_{index}",
@@ -207,8 +222,15 @@ class Experiment(experiment.Experiment):
             else:
                 with agent_utils.eval_mode(self.agent):
                     # multitask_obs = {"env_obs": obs, "task_obs": env_indices}
+                    multitask_obs_copy = multitask_obs.copy()
+                    # print(multitask_obs_copy['env_obs'].shape)
+                    for i in range(success_cnt.shape[0]):
+                        if len(success_set)>0:
+                            if i not in success_set and use_pseudo_idx:
+                                multitask_obs_copy['task_obs'][i] = pseudo_idx
+                                multitask_obs_copy['env_obs'][i,-3:] = multitask_obs_copy['env_obs'][pseudo_idx,-3:]
                     action = self.agent.sample_action(
-                        multitask_obs=multitask_obs,
+                        multitask_obs=multitask_obs_copy,
                         modes=[
                             train_mode,
                         ],

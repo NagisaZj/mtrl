@@ -53,6 +53,8 @@ def build_metaworld_vec_env(
     )
     benchmark_name = config.env.benchmark._target_.replace("metaworld.", "")
     num_tasks = int(benchmark_name.replace("MT", ""))
+    if benchmark_name=='MT1':
+        num_tasks = 25
     make_kwargs = {
         "benchmark": benchmark,
         "benchmark_name": benchmark_name,
@@ -64,6 +66,7 @@ def build_metaworld_vec_env(
     funcs_to_make_envs, env_id_to_task_map = get_list_of_func_to_make_metaworld_envs(
         **make_kwargs
     )
+    # print(env_id_to_task_map)
     env_metadata = {
         "ids": list(range(num_tasks)),
         "mode": [mode for _ in range(num_tasks)],

@@ -145,6 +145,9 @@ class Logger(object):
                     ]
                 )
             )
+            if 'mt1' in self.config.env.name:
+                num_envs = 30
+
         else:
             env_list: List[str] = []
             for key in self.config.metrics:
@@ -187,6 +190,7 @@ class Logger(object):
             )
             for key, value in self.config.metrics.items()
         }
+        # print(self.mgs['eval']._formating.keys())
 
     def log(self, key, value, step, n=1):
         assert key.startswith("train") or key.startswith("eval")
