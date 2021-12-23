@@ -83,17 +83,17 @@ def get_list_of_func_to_make_envs(
     """
     if not benchmark:
         if benchmark_name == "MT1":
-            benchmark = metaworld.ML1(task_name)
+            benchmark = metaworld.ML1(task_name,seed=2)
         elif benchmark_name == "MT10":
-            benchmark = metaworld.MT10()
+            benchmark = metaworld.MT10(seed=2)
         elif benchmark_name == "MT50":
-            benchmark = metaworld.MT50()
+            benchmark = metaworld.MT50(seed=2)
         else:
             raise ValueError(f"benchmark_name={benchmark_name} is not valid.")
 
     env_id_list = list(benchmark.train_classes.keys())
     if benchmark_name =='MT1':
-        env_id_list = env_id_list * 25
+        env_id_list = env_id_list * 50
         # print(env_id_list)
 
     def _get_class_items(current_benchmark):
@@ -116,8 +116,14 @@ def get_list_of_func_to_make_envs(
                             if task.env_name == name
                         ]
                     )
+                    task = [
+                            task
+                            for task in _get_tasks(current_benchmark)
+                            if task.env_name == name
+                        ][0]
                     if env_id_list[0] == env_id_list[1]:
                         new_id = env_id[:-3]+'-%d'%i + env_id[-3:]
+                        task = _get_tasks(current_benchmark)[i]
                         i+=1
                     else:
                         new_id=env_id

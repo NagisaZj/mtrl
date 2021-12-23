@@ -146,7 +146,7 @@ class Logger(object):
                 )
             )
             if 'mt1' in self.config.env.name:
-                num_envs = 30
+                num_envs = 50
 
         else:
             env_list: List[str] = []

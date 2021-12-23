@@ -169,7 +169,7 @@ class Experiment(experiment.Experiment):
                         if len(success_set) > 0:
                             idx = np.random.randint(0, len(success_set))
                             pseudo_idx = success_set[idx]
-                            use_pseudo_idx = (np.random.rand() > 2.5)
+                            use_pseudo_idx = (np.random.rand() > 0.5)
                             print(pseudo_idx,use_pseudo_idx)
                         for index, _ in enumerate(env_indices):
                             self.logger.log(

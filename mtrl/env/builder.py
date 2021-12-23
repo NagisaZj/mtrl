@@ -54,7 +54,7 @@ def build_metaworld_vec_env(
     benchmark_name = config.env.benchmark._target_.replace("metaworld.", "")
     num_tasks = int(benchmark_name.replace("MT", ""))
     if benchmark_name=='MT1':
-        num_tasks = 25
+        num_tasks = 50
     make_kwargs = {
         "benchmark": benchmark,
         "benchmark_name": benchmark_name,
