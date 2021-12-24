@@ -161,9 +161,9 @@ class Experiment(experiment.Experiment):
         use_pseudo_idxs = [False,False,False]
         sets = [[],[],[]]
         labels = np.zeros([50],dtype=np.int)
-        for i in range(50):
-            has_object_1 = (torch.mean(multitask_obs['env_obs'][i,4:7])==1)
-            has_object_2 = (torch.mean(multitask_obs['env_obs'][i, 11:14]) == 1)
+        for i in range(multitask_obs['env_obs'].shape[0]):
+            has_object_1 = not (torch.mean(multitask_obs['env_obs'][i,4:7])==0)
+            has_object_2 = not (torch.mean(multitask_obs['env_obs'][i, 11:14]) == 0)
             if not has_object_1:
                 sets[0].append(i)
                 labels[i] = 0
