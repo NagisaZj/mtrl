@@ -12,6 +12,7 @@ from mtrl.env.types import EnvType
 from mtrl.env.vec_env import VecEnv  # type: ignore
 from mtrl.experiment import experiment
 from mtrl.utils.types import ConfigType, EnvMetaDataType, EnvsDictType, ListConfigType
+import torch
 
 
 class Experiment(experiment.Experiment):
@@ -161,8 +162,8 @@ class Experiment(experiment.Experiment):
         sets = [[],[],[]]
         labels = np.zeros([50],dtype=np.int)
         for i in range(50):
-            has_object_1 = (np.mean(multitask_obs['env_obs'][i,4:7])==1)
-            has_object_2 = (np.mean(multitask_obs['env_obs'][i, 11:14]) == 1)
+            has_object_1 = (torch.mean(multitask_obs['env_obs'][i,4:7])==1)
+            has_object_2 = (torch.mean(multitask_obs['env_obs'][i, 11:14]) == 1)
             if not has_object_1:
                 sets[0].append(i)
                 labels[i] = 0
