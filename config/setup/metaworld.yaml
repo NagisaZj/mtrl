@@ -1,5 +1,7 @@
 # @package _group_
 seed: 42
+pseudo_thres: 10
+pseudo_interval: 150
 setup: metaworld
 base_path:
 save_dir: ${setup.base_path}/logs/${setup.id}

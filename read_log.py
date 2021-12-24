@@ -62,9 +62,13 @@ def read_data(paths=[],smoothed=30):
 	return final_datas, min_length
 
 
-pcgrad_data, pcgrad_length = read_data(['/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_2/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_6/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_9/train.log'],30)
+pcgrad_data, pcgrad_length = read_data(['/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_2/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_2/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_2/train.log'],30)
 
 mine_data, mine_length = read_data(['/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_5/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_7/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_8/train.log'],30)
+
+pcgrad_data, pcgrad_length = read_data(['/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_13/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_14/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_15/train.log'],30)
+
+mine_data, mine_length = read_data(['/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_16/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_17/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_18/train.log'],30)
 
 # with open('/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_6/train.log','r') as f:
 # 	for l in f.readlines():
@@ -88,6 +92,7 @@ plt.rc('font', family='Times New Roman')
 plt.clf()
 ax = plt.gca()
 for d,c,n in zip([pcgrad_data,mine_data],[1,0],['PcGrad','Mine']):
+# for d, c, n in zip([pcgrad_data], [1], ['PcGrad']):
 	mean = np.mean(d['sr'],0)
 	std = np.std(d['sr'],0)
 	ax.fill_between(d['x'][0], mean - std, mean + std, alpha=0.1, color=color_list[c],

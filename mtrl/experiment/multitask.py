@@ -154,7 +154,35 @@ class Experiment(experiment.Experiment):
         success_set = []
         use_pseudo_idx = False
         pseudo_idx = 0
+
+        success_sets = [[],[],[]]
+        pseudo_idxs = np.zeros([3],dtype=np.int)
+        use_pseudo_idxs = [False,False,False]
+        sets = [[],[],[]]
+        labels = np.zeros([50],dtype=np.int)
+        for i in range(50):
+            has_object_1 = (np.mean(multitask_obs['env_obs'][i,4:7])==1)
+            has_object_2 = (np.mean(multitask_obs['env_obs'][i, 11:14]) == 1)
+            if not has_object_1:
+                sets[0].append(i)
+                labels[i] = 0
+            else:
+                if not has_object_2:
+                    sets[1].append(i)
+                    labels[i] = 1
+                else:
+                    sets[2].append(i)
+                    labels[i] = 2
+        for i in range(3):
+            print(sets[i],labels[i])
         for step in range(self.start_step, exp_config.num_train_steps):
+            if step > 0 and step % self.config.setup.pseudo_interval == 0:
+                for i in range(3):
+                    if len(success_sets[i]) > 0:
+                        idx = np.random.randint(0, len(success_sets[i]))
+                        pseudo_idxs[i] = success_sets[i][idx]
+                        use_pseudo_idxs[i] = (np.random.rand() > self.config.setup.pseudo_thres)
+                        print(i,pseudo_idxs[i], use_pseudo_idxs[i])
             if step % self.max_episode_steps == 0:  # todo
                 if step > 0:
                     if "success" in self.metrics_to_track:
@@ -162,15 +190,15 @@ class Experiment(experiment.Experiment):
                         success_cnt[:,pointer] = success
                         pointer = (pointer+1)%5
                         for i in range(success_cnt.shape[0]):
-                            if i not in success_set:
+                            if i not in success_sets[labels[i]]:
                                 if np.mean(success_cnt[i])==1:
-                                    success_set.append(i)
-                        print('success set: ', success_set)
-                        if len(success_set) > 0:
-                            idx = np.random.randint(0, len(success_set))
-                            pseudo_idx = success_set[idx]
-                            use_pseudo_idx = (np.random.rand() > 0.5)
-                            print(pseudo_idx,use_pseudo_idx)
+                                    success_sets[labels[i]].append(i)
+                        print('success set: ', success_sets)
+                        # if len(success_set) > 0:
+                        #     idx = np.random.randint(0, len(success_set))
+                        #     pseudo_idx = success_set[idx]
+                        #     use_pseudo_idx = (np.random.rand() > 0.5)
+                        #     print(pseudo_idx,use_pseudo_idx)
                         for index, _ in enumerate(env_indices):
                             self.logger.log(
                                 f"train/success_env_index_{index}",
@@ -225,10 +253,10 @@ class Experiment(experiment.Experiment):
                     multitask_obs_copy = multitask_obs.copy()
                     # print(multitask_obs_copy['env_obs'].shape)
                     for i in range(success_cnt.shape[0]):
-                        if len(success_set)>0:
-                            if i not in success_set and use_pseudo_idx:
-                                multitask_obs_copy['task_obs'][i] = pseudo_idx
-                                multitask_obs_copy['env_obs'][i,-3:] = multitask_obs_copy['env_obs'][pseudo_idx,-3:]
+                        if len(success_sets[labels[i]]) > 0 and use_pseudo_idxs[labels[i]]:
+                            if i not in success_sets[labels[i]]:
+                                multitask_obs_copy['task_obs'][i] = pseudo_idxs[labels[i]]
+                                multitask_obs_copy['env_obs'][i,-3:] = multitask_obs_copy['env_obs'][pseudo_idxs[labels[i]],-3:]
                     action = self.agent.sample_action(
                         multitask_obs=multitask_obs_copy,
                         modes=[
