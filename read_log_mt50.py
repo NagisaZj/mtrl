@@ -44,8 +44,9 @@ def read_data(paths=[],smoothed=30):
 		sr = np.zeros((len(datas)))
 		# srs = np.zeros((25, len(datas)))
 		for num, d in enumerate(datas):
-			x[num] = d['episode']
-			sr[num] = d['success']
+			if 'episode' in d.keys() and 'success' in d.keys():
+				x[num] = d['episode']
+				sr[num] = d['success']
 			# for j in range(25):
 			# 	srs[j][num] = d['success_env_index_' + '%d' % j]
 		sr = smooth(sr[None], smoothed)[0]
@@ -62,13 +63,15 @@ def read_data(paths=[],smoothed=30):
 	return final_datas, min_length
 
 
-pcgrad_data, pcgrad_length = read_data(['/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_2/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_2/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_2/train.log'],30)
 
-mine_data, mine_length = read_data(['/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_5/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_7/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_8/train.log'],30)
 
-pcgrad_data, pcgrad_length = read_data(['/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_13/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_14/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_15/train.log'],30)
+pcgrad_data, pcgrad_length = read_data(['/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_28/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_29/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_30/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_31/train.log'],30)
 
-mine_data, mine_length = read_data(['/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_16/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_17/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_18/train.log'],30)
+mine_data, mine_length = read_data(['/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_24/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_25/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_26/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_27/train.log'],30)
+
+mine_data_9, mine_length_9 = read_data(['/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_38/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_39/train.log',],30)
+
+mine_data_8, mine_length_8 = read_data(['/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_36/train.log','/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_37/train.log',],30)
 
 # with open('/data2/zj/mtrl/logs/90f2497ff4cee27c0d30fbc66e6ba205f94808ba4ea16e057df58e73_issue_None_seed_6/train.log','r') as f:
 # 	for l in f.readlines():
@@ -91,7 +94,8 @@ plt.rc('font', family='Times New Roman')
 # matplotlib.rcParams['text.usetex'] = True
 plt.clf()
 ax = plt.gca()
-for d,c,n in zip([mine_data,pcgrad_data],[0,1],['Mine','PcGrad']):
+# for d,c,n in zip([mine_data,pcgrad_data],[0,1],['Mine','PcGrad']):
+for d,c,n in zip([mine_data,mine_data_9,mine_data_8,pcgrad_data],[0,1,2,3],['Mine','Mine_0.9','Mine_0.8','PcGrad']):
 # for d, c, n in zip([pcgrad_data], [1], ['PcGrad']):
 	mean = np.mean(d['sr'],0)
 	std = np.std(d['sr'],0)

@@ -48,17 +48,17 @@ class Experiment(multitask.Experiment):
             config=self.config, benchmark=benchmark, mode=mode, env_id_to_task_map=None
         )
         mode = "eval"
-        envs[mode] = envs['train']
-        # envs[mode], env_id_to_task_map = env_builder.build_metaworld_vec_env(
-        #     config=self.config,
-        #     benchmark=benchmark,
-        #     mode="train",
-        #     env_id_to_task_map=env_id_to_task_map,
-        # )
+        # envs[mode] = envs['train']
+        envs[mode], env_id_to_task_map = env_builder.build_metaworld_vec_env(
+            config=self.config,
+            benchmark=benchmark,
+            mode="train",
+            env_id_to_task_map=env_id_to_task_map,
+        )
         # In MT10 and MT50, the tasks are always sampled in the train mode.
         # For more details, refer https://github.com/rlworkgroup/metaworld
 
-        max_episode_steps = 150
+        max_episode_steps = 500
         # hardcoding the steps as different environments return different
         # values for max_path_length. MetaWorld uses 150 as the max length.
         metadata = self.get_env_metadata(

@@ -130,7 +130,6 @@ class Experiment(experiment.Experiment):
         exp_config = self.config.experiment
 
         vec_env = self.envs["train"]
-
         episode_reward, episode_step, done = [
             np.full(shape=vec_env.num_envs, fill_value=fill_value)
             for fill_value in [0.0, 0, True]
@@ -150,17 +149,54 @@ class Experiment(experiment.Experiment):
         env_indices = multitask_obs["task_obs"]
 
         train_mode = ["train" for _ in range(vec_env.num_envs)]
-        success_cnt = np.zeros((len(env_indices),5))
+        success_cnt = np.zeros((len(env_indices),20))
         pointer = 0
         success_set = []
         use_pseudo_idx = False
         pseudo_idx = 0
-
+        num_tasks = len(env_indices)
         success_sets = [[],[],[]]
         pseudo_idxs = np.zeros([3],dtype=np.int)
         use_pseudo_idxs = [False,False,False]
         sets = [[],[],[]]
-        labels = np.zeros([50],dtype=np.int)
+        labels = np.zeros([num_tasks],dtype=np.int)
+
+        high_steps_per_episode = int(np.ceil(self.max_episode_steps / self.config.setup.pseudo_interval))
+        pseudo_idxs_evo = np.zeros([num_tasks,6,high_steps_per_episode],dtype=np.int)
+        current_pseudo_idxs_idx = np.zeros([num_tasks],dtype=np.int)
+        current_step_idxs = np.zeros([num_tasks],dtype=np.int)
+        current_use_pseudo_index = [False]*50
+        performances = np.zeros([num_tasks,6])
+        used_slots = np.zeros([num_tasks])
+        use_evo = self.config.setup.use_evo
+        def sample_new_sons(pseudo_idxs_evo, used_slots, performances,success_sets,i,task_id):
+            if used_slots[task_id]!=1:
+                for j in range(pseudo_idxs_evo.shape[1]):
+                    for k in range(pseudo_idxs_evo.shape[2]):
+                        idx = np.random.randint(0, len(success_sets[i]))
+                        pseudo_idxs_evo[task_id,j,k] = success_sets[i][idx]
+                        if np.random.rand()>0.1:
+                            pseudo_idxs_evo[task_id, j, k] = task_id
+                used_slots[task_id] = 1
+            else:
+                if all(performances[task_id]!=0):
+                    min_arg = np.argmin(performances[task_id])
+                    if min_arg !=5:
+                        pseudo_idxs_evo[task_id,min_arg] = pseudo_idxs_evo[task_id,5].copy()
+                        performances[task_id,min_arg] = performances[task_id,5]
+                p = np.exp(np.clip(performances[task_id,:-1]/10,-np.inf,50)+1e-4)/np.sum(np.exp(np.clip(performances[task_id,:-1]/10,-np.inf,50)+1e-4))
+                index = np.random.choice(np.arange(performances.shape[1]-1),p=p)
+                ori = pseudo_idxs_evo[task_id,index]
+                pseudo_idxs_evo[task_id,-1] = ori.copy()
+                performances[task_id,-1] = 0.0
+                for k in range(pseudo_idxs_evo.shape[2]):
+                    if np.random.rand()>0.5:
+                        idx = np.random.randint(0, len(success_sets[i]))
+                        pseudo_idxs_evo[task_id, -1, k] = success_sets[i][idx]
+                        if np.random.rand()>0.1:
+                            pseudo_idxs_evo[task_id, -1, k] = task_id
+            return pseudo_idxs_evo,used_slots,performances
+
         for i in range(multitask_obs['env_obs'].shape[0]):
             has_object_1 = not (torch.mean(multitask_obs['env_obs'][i,4:7])==0)
             has_object_2 = not (torch.mean(multitask_obs['env_obs'][i, 11:14]) == 0)
@@ -175,21 +211,15 @@ class Experiment(experiment.Experiment):
                     sets[2].append(i)
                     labels[i] = 2
         for i in range(3):
-            print(sets[i],labels[i])
+            print(sets[i],labels)
         for step in range(self.start_step, exp_config.num_train_steps):
-            if step > 0 and step % self.config.setup.pseudo_interval == 0:
-                for i in range(3):
-                    if len(success_sets[i]) > 0:
-                        idx = np.random.randint(0, len(success_sets[i]))
-                        pseudo_idxs[i] = success_sets[i][idx]
-                        use_pseudo_idxs[i] = (np.random.rand() > self.config.setup.pseudo_thres)
-                        print(i,pseudo_idxs[i], use_pseudo_idxs[i])
+
             if step % self.max_episode_steps == 0:  # todo
                 if step > 0:
                     if "success" in self.metrics_to_track:
                         success = (success > 0).astype("float")
                         success_cnt[:,pointer] = success
-                        pointer = (pointer+1)%5
+                        pointer = (pointer+1)%(success_cnt.shape[1])
                         for i in range(success_cnt.shape[0]):
                             if i not in success_sets[labels[i]]:
                                 if np.mean(success_cnt[i])==1:
@@ -214,7 +244,13 @@ class Experiment(experiment.Experiment):
                             step,
                         )
                         self.logger.log(f"train/env_index_{index}", env_index, step)
-
+                    if use_evo:
+                        for m in range(num_tasks):
+                            if current_use_pseudo_index[m]:
+                                if performances[m,current_pseudo_idxs_idx[m]] ==0 :
+                                    performances[m, current_pseudo_idxs_idx[m]] = episode_reward[m]
+                                else:
+                                    performances[m, current_pseudo_idxs_idx[m]] = np.mean([performances[m, current_pseudo_idxs_idx[m]],episode_reward[m]])
                     self.logger.log("train/duration", time.time() - start_time, step)
                     start_time = time.time()
                     self.logger.dump(step)
@@ -243,6 +279,41 @@ class Experiment(experiment.Experiment):
 
                 self.logger.log("train/episode", episode, step)
 
+            if step % self.max_episode_steps == 0 and use_evo:
+                for i in range(3):
+                    if len(success_sets[i]) > 0:
+                        for t in sets[i]:
+                            pseudo_idxs_evo, used_slots, performances = sample_new_sons(pseudo_idxs_evo, used_slots, performances,success_sets,i,t)
+                for m in range(num_tasks):
+                    if all(performances[m,:-1]!=0):
+                        p = np.exp(np.clip(performances[m,:-1]/10,-np.inf,50)+1e-4)/np.sum(np.exp(np.clip(performances[m,:-1]/10,-np.inf,50)+1e-4))
+                        index = np.random.choice(np.arange(performances.shape[1] - 1), p=p)
+                        current_pseudo_idxs_idx[m] = index
+                        if np.random.rand() > 0.5:
+                            current_pseudo_idxs_idx[m] = 5
+                    else:
+                        index = np.random.choice(np.where(performances[m,:-1]==0)[0])
+                        current_pseudo_idxs_idx[m] = index
+                    if np.random.rand()>self.config.setup.pseudo_thres and len(success_sets[labels[m]])>0 and (m not in success_sets[labels[m]]):
+                        current_use_pseudo_index[m] = True
+                    else:
+                        current_use_pseudo_index[m] = False
+
+            if step > 0 and step % self.config.setup.pseudo_interval == 0:
+                if not use_evo:
+                    for i in range(3):
+                        if len(success_sets[i]) > 0:
+                            idx = np.random.randint(0, len(success_sets[i]))
+                            pseudo_idxs[i] = success_sets[i][idx]
+                            use_pseudo_idxs[i] = (np.random.rand() > self.config.setup.pseudo_thres)
+                            print(i,pseudo_idxs[i], use_pseudo_idxs[i])
+                else:
+                    ppp = int((step%self.max_episode_steps)/self.config.setup.pseudo_interval)
+                    for m in range(num_tasks):
+                        if current_use_pseudo_index[m]:
+                            current_step_idxs[m] = pseudo_idxs_evo[m,current_pseudo_idxs_idx[m],ppp]
+                            print(m, current_step_idxs[m])
+
             if step < exp_config.init_steps:
                 action = np.asarray(
                     [self.action_space.sample() for _ in range(vec_env.num_envs)]
@@ -253,11 +324,18 @@ class Experiment(experiment.Experiment):
                     # multitask_obs = {"env_obs": obs, "task_obs": env_indices}
                     multitask_obs_copy = multitask_obs.copy()
                     # print(multitask_obs_copy['env_obs'].shape)
-                    for i in range(success_cnt.shape[0]):
-                        if len(success_sets[labels[i]]) > 0 and use_pseudo_idxs[labels[i]]:
-                            if i not in success_sets[labels[i]]:
-                                multitask_obs_copy['task_obs'][i] = pseudo_idxs[labels[i]]
-                                multitask_obs_copy['env_obs'][i,-3:] = multitask_obs_copy['env_obs'][pseudo_idxs[labels[i]],-3:]
+                    if not use_evo:
+                        for i in range(success_cnt.shape[0]):
+                            if len(success_sets[labels[i]]) > 0 and use_pseudo_idxs[labels[i]]:
+                                if i not in success_sets[labels[i]]:
+                                    multitask_obs_copy['task_obs'][i] = pseudo_idxs[labels[i]]
+                                    multitask_obs_copy['env_obs'][i,-3:] = multitask_obs_copy['env_obs'][pseudo_idxs[labels[i]],-3:]
+                    else:
+                        for m in range(num_tasks):
+                            if current_use_pseudo_index[m] and m not in success_sets[labels[m]]:
+                                multitask_obs_copy['task_obs'][m] = current_step_idxs[m]
+                                multitask_obs_copy['env_obs'][m, -3:] = multitask_obs_copy['env_obs'][
+                                                                        current_step_idxs[m], -3:]
                     action = self.agent.sample_action(
                         multitask_obs=multitask_obs_copy,
                         modes=[

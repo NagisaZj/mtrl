@@ -1,6 +1,6 @@
 # @package _group_
 name: metaworld-mt1
-num_envs: 25
+num_envs: 50
 benchmark:
   _target_: metaworld.MT1
   env_name: pick-place-v2

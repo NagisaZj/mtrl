@@ -2,6 +2,7 @@
 seed: 42
 pseudo_thres: 10
 pseudo_interval: 150
+use_evo: 0
 setup: metaworld
 base_path:
 save_dir: ${setup.base_path}/logs/${setup.id}
